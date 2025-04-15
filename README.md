@@ -1,6 +1,29 @@
 # Room_Match
 Cupid API’s Room Match
 
+
+    Room-Match/
+    ├── README.md                # Overview, setup instructions, API usage
+    ├── requirements.txt         # All dependencies
+    ├── notebook/                # EDA, model training, evaluation
+    │       └── room_match_dev.ipynb
+    ├── src/                     # Core backend code
+    │   ├── main.py              # FastAPI app
+    │   ├── api/                 # API endpoint logic
+    │   │   └── room_match.py
+    │   ├── models/              # Trained model files or loading code
+    │   │   └── model.pkl
+    │   ├── utils/               # Preprocessing, tokenization, helpers
+    │   │   ├── preprocess.py
+    │   │   └── features.py
+    │   └── inference.py         # Predict function used by API
+    ├── tests/                   # Unit and integration tests
+    │   └── test_api.py
+
+    
+    
+  
+
 ### Objective: Classification for Wine Quality (Binary Classification)
 
 Build a machine learning API similar to the Cupid API’s Room Match feature. <br> 
