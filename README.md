@@ -2,7 +2,7 @@
 
 Cupid API’s Room Match
 
-## 🎯 Objective: Multilingual Room Matching with Fuzzy Logic and XGBoost
+##  Objective: Multilingual Room Matching with Fuzzy Logic and XGBoost
 
 Build a machine learning API similar to Cupid's Room Match API.
 This API handles POST requests and returns room match predictions between suppliers and reference rooms.
@@ -10,7 +10,7 @@ Supports mixed-language input (e.g., English + Arabic + Korean).
 
 ---
 
-### 🗂️ Project Structure
+###  Project Structure
 
 ```bash
 Room_Match/
@@ -30,19 +30,19 @@ Room_Match/
 
 ---
 
-## 🚀 How to Run the API
+##  How to Run the API
 
-### ✅ Step 1: Install dependencies
+###  Step 1: Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### ✅ Step 2: Start the Flask API
+###  Step 2: Start the Flask API
 ```bash
 FLASK_APP=app.py flask run --host=0.0.0.0 --port=5050
 ```
 
-### ✅ Step 3: Send a test request
+###  Step 3: Send a test request
 ```bash
 curl -X POST http://127.0.0.1:5050/room_match \
   -H 'Content-Type: application/json' \
@@ -56,7 +56,7 @@ python test_post.py
 
 ---
 
-## 🧪 Input Format (sample_request.json)
+##  Input Format (sample_request.json)
 ```json
 {
   "inputCatalog": [
@@ -82,7 +82,7 @@ python test_post.py
 
 ---
 
-## 🔍 Matching Logic
+##  Matching Logic
 
 - Language detection via fastText (`lid.176.bin`)
 - Text normalization (lowercase, strip accents, remove punctuation)
@@ -97,7 +97,7 @@ features = ["lp_id_match", "hotel_id_match", "room_id_match", "fuzzy_score"]
 label = int(fuzzy_score >= 0.85)
 ```
 
-### 🧠 Optional Upgrade: SentenceTransformer
+###  Optional Upgrade: SentenceTransformer
 If GPU (e.g., T4 in Colab) is available:
 ```python
 from sentence_transformers import SentenceTransformer, util
@@ -107,7 +107,7 @@ This improves multilingual and mixed-language understanding.
 
 ---
 
-## 📦 Model Training Pipeline
+##  Model Training Pipeline
 
 1. **Data Cleaning**
    - Drop rows with missing names
@@ -127,7 +127,7 @@ This improves multilingual and mixed-language understanding.
 
 ---
 
-## ✅ Example Output
+##  Example Output
 ```json
 {
   "supplierRoomId": "2",
