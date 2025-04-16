@@ -1,0 +1,30 @@
+{
+  "inputCatalog": [
+    {
+      "supplierId": "nuitee",
+      "supplierRoomInfo": [
+        {
+          "supplierRoomId": "2",
+          "supplierRoomName": "Classic Room - Olympic Queen Bed - ROOM ONLY"
+        }
+      ]
+    }
+  ],
+  "referenceCatalog": [
+    {
+      "propertyId": "5122906",
+      "propertyName": "Pestana Park Avenue",
+      "referenceRoomInfo": [
+        {
+          "roomId": "512290602",
+          "roomName": "Classic Room"
+        },
+        {
+          "roomId": "512290608",
+          "roomName": "Classic Room - Disability Access"
+        }
+      ]
+    }
+  ]
+}
+
