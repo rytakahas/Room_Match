@@ -14,16 +14,18 @@ pandas tqdm numpy rapidfuzz xgboost scikit-learn matplotlib seaborn fasttext sen
 
 #### Install via pip
 
-
+```bash
 pip install -r requirements.txt
+```
 - Dataset
 updated_core_rooms.csv → loaded into df_rooms (supplier listings)
 
 reference_rooms-1737378184366.csv → loaded into df_ref (reference data)
 
-
+```python
 df_rooms = pd.read_csv("updated_core_rooms.csv")
 df_ref = pd.read_csv("reference_rooms-1737378184366.csv")
+```
 ### Exploratory Data Analysis (EDA)
 Dropped rows with missing supplier_room_name or room_name
 
@@ -60,14 +62,15 @@ Condition	Feature
 lp_id, hotel_id, room_id match	Feature flags
 fuzzy_score >= 0.85	Considered a match
 Label = 1 if any strong match is present	Binary label
-python
-Copy
-Edit
+
+```python
 label = int(fuzzy_score >= 0.85 or id_match)
+```
+
 ### Optional: Deep Sentence Embedding for Multilingual Matching
 If GPU (e.g., Colab T4 or local CUDA) is available, you can boost multilingual matching accuracy using SentenceTransformer for semantic similarity:
 
-
+```python
 from sentence_transformers import SentenceTransformer, util
 import torch
 
@@ -77,6 +80,8 @@ model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2", device=devi
 # Compare room names:
 sim = util.cos_sim(model.encode(name1, convert_to_tensor=True), 
                    model.encode(name2, convert_to_tensor=True)).item()
+```
+
 This model supports 100+ languages and works great on mixed-language room names like:
 
 "Deluxe Twin Room, 2 Double Beds (디럭스 패밀리 트윈)"
@@ -109,11 +114,14 @@ Metrics:
 
 - Probability-based ranking
 
+```python
 X = match_df[['lp_id_match', 'hotel_id_match', 'room_id_match', 'fuzzy_score']]
 y = match_df['label']
 
 model = xgboost.XGBClassifier(...)
 model.fit(X_train, y_train)
+```
+
 ### Results
 ~99.6% F1-score on test set
 
@@ -127,7 +135,10 @@ Human-friendly sample evaluation included:
 
   - Sample Predictions
 
-Supplier Name	Ref Name	Fuzzy	Prediction <br>
-Deluxe Room, 2 Beds	Deluxe Room (디럭스)	0.92	: Match  <br>
-Economy Bunk	Family Suite	0.41	: No Match  <br>
+### Sample Predictions
+
+| Supplier Name             | Ref Name                    | Fuzzy Score | Prediction   |
+|--------------------------|-----------------------------|-------------|--------------|
+| Deluxe Room, 2 Beds      | Deluxe Room (디럭스)         | 0.92        |  Match      |
+| Economy Bunk             | Family Suite                | 0.41        |  No Match   |
 
