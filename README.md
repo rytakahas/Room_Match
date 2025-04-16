@@ -1,68 +1,147 @@
 # Room_Match
+
 Cupid API’s Room Match
 
+## 🎯 Objective: Multilingual Room Matching with Fuzzy Logic and XGBoost
 
-    Room-Match/
-    ├── README.md                # Overview, setup instructions, API usage
-    ├── requirements.txt         # All dependencies
-    ├── notebook/                # EDA, model training, evaluation
-    │       └── room_match_dev.ipynb
-    ├── src/                     # Core backend code
-    │   ├── main.py              # FastAPI app
-    │   ├── api/                 # API endpoint logic
-    │   │   └── room_match.py
-    │   ├── models/              # Trained model files or loading code
-    │   │   └── model.pkl
-    │   ├── utils/               # Preprocessing, tokenization, helpers
-    │   │   ├── preprocess.py
-    │   │   └── features.py
-    │   └── inference.py         # Predict function used by API
-    ├── tests/                   # Unit and integration tests
-    │   └── test_api.py
+Build a machine learning API similar to Cupid's Room Match API.
+This API handles POST requests and returns room match predictions between suppliers and reference rooms.
+Supports mixed-language input (e.g., English + Arabic + Korean).
 
-    
-    
-  
+---
 
-### Objective: Classification for Wine Quality (Binary Classification)
+### 🗂️ Project Structure
 
-Build a machine learning API similar to the Cupid API’s Room Match feature. <br> 
-The API should handle POST requests and return sample request/response payloads in a similar <br> 
-format to the Cupid Room Match API. Provide a detailed explanation of your development process, <br> 
-including how you collect and process data, develop models, and scale the system.
+```bash
+Room_Match/
+├── README.md                  # This file
+├── requirements.txt           # All dependencies
+├── app.py                     # Flask API server
+├── matcher.py                 # Core logic for matching
+├── models/                    # Trained XGBoost model + fastText model
+│   ├── model.pkl
+│   └── lid.176.bin
+├── sample_request.json        # Example POST request payload
+├── test_post.py               # Simple script to send test POST request
+├── notebooks/
+│   └── room_match_dev.ipynb   # EDA, model training and evaluation
+└── __pycache__/
+```
 
+---
 
-**Random Forest** and **XGBoost** <br> 
-The workflow includes data preprocessing, model training, <br>
-hyperparameter optimization, evaluation, and visualization of the results.
+## 🚀 How to Run the API
 
-#### Steps
-1: Data Exploration and Preprocessing <br>
-2: Model Training with Random Forest and XGBoost <br>
-3: Evaluation Metrics and Visualization <br>
-4: Deliverables <br>
-<br>
-<br>
+### ✅ Step 1: Install dependencies
+```bash
+pip install -r requirements.txt
+```
 
-1. **Data Preparation**
-    - Load the wine quality dataset.
-    - Analyze statistics and correlations of features.
-    - Transform multiple classifications of wine quality
-     to binary classification.
-    - Standard Scaling ($\mu$ = 0, $\sigma$ = 1)
+### ✅ Step 2: Start the Flask API
+```bash
+FLASK_APP=app.py flask run --host=0.0.0.0 --port=5050
+```
 
-2. **Model Training**
-    - Split the dataset into training and testing sets.
-    - Train with Random Forest (w/o grid search) 
-    and XGBoost with optuna.
+### ✅ Step 3: Send a test request
+```bash
+curl -X POST http://127.0.0.1:5050/room_match \
+  -H 'Content-Type: application/json' \
+  -d @sample_request.json
+```
 
-3. **Evaluation Metrics and Visualization**
-    - Evaluate precision, recall, and F1 scores
-    - Visualized ROC curve, confusion matrix, and
-    feature importance 
+Or run:
+```bash
+python test_post.py
+```
 
+---
 
-4. **Deliverables**
-    - RF, and XGBoost trained models were saved to **pkl**
-    files, and reproducing test results
+## 🧪 Input Format (sample_request.json)
+```json
+{
+  "inputCatalog": [
+    {
+      "supplierId": "nuitee",
+      "supplierRoomInfo": [
+        {"supplierRoomId": "2", "supplierRoomName": "Classic Room - Olympic Queen Bed - ROOM ONLY"}
+      ]
+    }
+  ],
+  "referenceCatalog": [
+    {
+      "propertyId": "5122906",
+      "propertyName": "Pestana Park Avenue",
+      "referenceRoomInfo": [
+        {"roomId": "512290602", "roomName": "Classic Room"},
+        {"roomId": "512290608", "roomName": "Classic Room - Disability Access"}
+      ]
+    }
+  ]
+}
+```
 
+---
+
+## 🔍 Matching Logic
+
+- Language detection via fastText (`lid.176.bin`)
+- Text normalization (lowercase, strip accents, remove punctuation)
+- Fuzzy match using `rapidfuzz.partial_ratio`
+- Feature engineering:
+  - `room_id_match`
+  - `fuzzy_score`
+- Model: XGBoost classifier with Optuna tuning
+
+```python
+features = ["lp_id_match", "hotel_id_match", "room_id_match", "fuzzy_score"]
+label = int(fuzzy_score >= 0.85)
+```
+
+### 🧠 Optional Upgrade: SentenceTransformer
+If GPU (e.g., T4 in Colab) is available:
+```python
+from sentence_transformers import SentenceTransformer, util
+model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
+```
+This improves multilingual and mixed-language understanding.
+
+---
+
+## 📦 Model Training Pipeline
+
+1. **Data Cleaning**
+   - Drop rows with missing names
+   - Normalize strings
+   - Filter candidate pairs by ID
+
+2. **Label Generation**
+   - `label = 1` if fuzzy_score >= 0.85 or strong ID match
+
+3. **Model**
+   - XGBoost classifier with Optuna
+   - Metrics: F1, ROC-AUC, Confusion matrix
+
+4. **Saved Output**
+   - `models/model.pkl`: trained classifier
+   - `models/lid.176.bin`: fastText language detection
+
+---
+
+## ✅ Example Output
+```json
+{
+  "supplierRoomId": "2",
+  "supplierRoomName": "Classic Room - Olympic Queen Bed - ROOM ONLY",
+  "refRoomId": "512290602",
+  "refRoomName": "Classic Room",
+  "fuzzy_score": 1.0,
+  "match_score": 0.9991,
+  "lang_supplier": "en",
+  "lang_ref": "en"
+}
+```
+
+---
+
+## 📬 Contact
+For questions, ideas, or improvements, feel free to open an issue or pull request. ✨

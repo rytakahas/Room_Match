@@ -1,147 +1,142 @@
-# Room_Match
+# 🏨 Multilingual Room Matching with Fuzzy Logic and XGBoost
 
-Cupid API’s Room Match
-
-## 🎯 Objective: Multilingual Room Matching with Fuzzy Logic and XGBoost
-
-Build a machine learning API similar to Cupid's Room Match API.
-This API handles POST requests and returns room match predictions between suppliers and reference rooms.
-Supports mixed-language input (e.g., English + Arabic + Korean).
+This project builds a multilingual, fuzzy logic–based machine learning pipeline for **matching hotel room listings** between suppliers and a reference dataset. It supports **multiple and mixed languages** (e.g., English, Korean, Arabic) using `fastText` and `rapidfuzz`, followed by a binary classification model using **XGBoost**.
 
 ---
 
-### 🗂️ Project Structure
+## 📦 Requirements
 
-```bash
-Room_Match/
-├── README.md                  # This file
-├── requirements.txt           # All dependencies
-├── app.py                     # Flask API server
-├── matcher.py                 # Core logic for matching
-├── models/                    # Trained XGBoost model + fastText model
-│   ├── model.pkl
-│   └── lid.176.bin
-├── sample_request.json        # Example POST request payload
-├── test_post.py               # Simple script to send test POST request
-├── notebooks/
-│   └── room_match_dev.ipynb   # EDA, model training and evaluation
-└── __pycache__/
-```
+Create a `requirements.txt` file with:
 
----
+pandas tqdm numpy rapidfuzz xgboost scikit-learn matplotlib seaborn fasttext sentence-transformers torch unicodedata2
 
-## 🚀 How to Run the API
+perl
+Copy
+Edit
 
-### ✅ Step 1: Install dependencies
+### 🔧 Install via pip
+
 ```bash
 pip install -r requirements.txt
-```
+📂 Dataset
+updated_core_rooms.csv → loaded into df_rooms (supplier listings)
 
-### ✅ Step 2: Start the Flask API
-```bash
-FLASK_APP=app.py flask run --host=0.0.0.0 --port=5050
-```
+reference_rooms-1737378184366.csv → loaded into df_ref (reference data)
 
-### ✅ Step 3: Send a test request
-```bash
-curl -X POST http://127.0.0.1:5050/room_match \
-  -H 'Content-Type: application/json' \
-  -d @sample_request.json
-```
+python
+Copy
+Edit
+df_rooms = pd.read_csv("updated_core_rooms.csv")
+df_ref = pd.read_csv("reference_rooms-1737378184366.csv")
+📊 Exploratory Data Analysis (EDA)
+Dropped rows with missing supplier_room_name or room_name
 
-Or run:
-```bash
-python test_post.py
-```
+Verified data types: room_id, core_room_id, hotel_id, etc.
 
----
+Removed rows with NaN, empty strings, or duplicate entries
 
-## 🧪 Input Format (sample_request.json)
-```json
-{
-  "inputCatalog": [
-    {
-      "supplierId": "nuitee",
-      "supplierRoomInfo": [
-        {"supplierRoomId": "2", "supplierRoomName": "Classic Room - Olympic Queen Bed - ROOM ONLY"}
-      ]
-    }
-  ],
-  "referenceCatalog": [
-    {
-      "propertyId": "5122906",
-      "propertyName": "Pestana Park Avenue",
-      "referenceRoomInfo": [
-        {"roomId": "512290602", "roomName": "Classic Room"},
-        {"roomId": "512290608", "roomName": "Classic Room - Disability Access"}
-      ]
-    }
-  ]
-}
-```
+🧹 Data Preparation Strategy
+1. Candidate Filtering by ID
+We first narrow down potential matches using:
 
----
+lp_id (strong signal)
 
-## 🔍 Matching Logic
+core_hotel_id and hotel_id
 
-- Language detection via fastText (`lid.176.bin`)
-- Text normalization (lowercase, strip accents, remove punctuation)
-- Fuzzy match using `rapidfuzz.partial_ratio`
-- Feature engineering:
-  - `room_id_match`
-  - `fuzzy_score`
-- Model: XGBoost classifier with Optuna tuning
+core_room_id, supplier_room_id, and room_id
 
-```python
-features = ["lp_id_match", "hotel_id_match", "room_id_match", "fuzzy_score"]
-label = int(fuzzy_score >= 0.85)
-```
+This gives a small candidate set for each supplier room.
 
-### 🧠 Optional Upgrade: SentenceTransformer
-If GPU (e.g., T4 in Colab) is available:
-```python
+2. Room Name Matching
+Using multilingual support:
+
+🔤 Language Detection: fastText lid.176.bin
+
+🔁 Fuzzy Token Matching: rapidfuzz.partial_ratio (normalized, punctuation-free comparison)
+
+✅ Handles mixed-language names like "Deluxe Room (디럭스 패밀리 트윈)"
+
+🔍 Matching Logic
+Each candidate pair is labeled:
+
+
+Condition	Feature
+lp_id, hotel_id, room_id match	Feature flags
+fuzzy_score >= 0.85	Considered a match
+Label = 1 if any strong match is present	Binary label
+python
+Copy
+Edit
+label = int(fuzzy_score >= 0.85 or id_match)
+🚀 Optional: Deep Sentence Embedding for Multilingual Matching
+If GPU (e.g., Colab T4 or local CUDA) is available, you can boost multilingual matching accuracy using SentenceTransformer for semantic similarity:
+
+python
+Copy
+Edit
 from sentence_transformers import SentenceTransformer, util
-model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-```
-This improves multilingual and mixed-language understanding.
+import torch
 
----
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2", device=device)
 
-## 📦 Model Training Pipeline
+# Compare room names:
+sim = util.cos_sim(model.encode(name1, convert_to_tensor=True), 
+                   model.encode(name2, convert_to_tensor=True)).item()
+This model supports 100+ languages and works great on mixed-language room names like:
 
-1. **Data Cleaning**
-   - Drop rows with missing names
-   - Normalize strings
-   - Filter candidate pairs by ID
+"Deluxe Twin Room, 2 Double Beds (디럭스 패밀리 트윈)"
 
-2. **Label Generation**
-   - `label = 1` if fuzzy_score >= 0.85 or strong ID match
+"Deluxe Twin Room with two double beds"
 
-3. **Model**
-   - XGBoost classifier with Optuna
-   - Metrics: F1, ROC-AUC, Confusion matrix
+🧠 Model: XGBoost Classification
+We use XGBoost to learn from:
 
-4. **Saved Output**
-   - `models/model.pkl`: trained classifier
-   - `models/lid.176.bin`: fastText language detection
+lp_id_match
 
----
+hotel_id_match
 
-## ✅ Example Output
-```json
-{
-  "supplierRoomId": "2",
-  "supplierRoomName": "Classic Room - Olympic Queen Bed - ROOM ONLY",
-  "refRoomId": "512290602",
-  "refRoomName": "Classic Room",
-  "fuzzy_score": 1.0,
-  "match_score": 0.9991,
-  "lang_supplier": "en",
-  "lang_ref": "en"
-}
-```
+room_id_match
 
----
+fuzzy_score
 
-## 📬 Contact
-For questions, ideas, or improvements, feel free to open an issue or pull request. ✨
+💡 Training Strategy
+80/20 train-test split
+
+Hyperparameter tuning via Optuna
+
+Metrics:
+
+✅ F1-score
+
+✅ ROC-AUC
+
+✅ Confusion matrix
+
+✅ Probability-based ranking
+
+python
+Copy
+Edit
+X = match_df[['lp_id_match', 'hotel_id_match', 'room_id_match', 'fuzzy_score']]
+y = match_df['label']
+
+model = xgboost.XGBClassifier(...)
+model.fit(X_train, y_train)
+✅ Results
+~99.6% F1-score on test set
+
+Probabilistic predictions allow for ranked match scoring
+
+Human-friendly sample evaluation included:
+
+✅ High-confidence matches
+
+❌ Rejected mismatches
+
+🧪 Sample Predictions
+
+Supplier Name	Ref Name	Fuzzy	Prediction
+Deluxe Room, 2 Beds	Deluxe Room (디럭스)	0.92	✅ Match
+Economy Bunk	Family Suite	0.41	❌ No Match
+
