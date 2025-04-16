@@ -10,15 +10,13 @@ Create a `requirements.txt` file with:
 
 pandas tqdm numpy rapidfuzz xgboost scikit-learn matplotlib seaborn fasttext sentence-transformers torch unicodedata2
 
-perl
-Copy
-Edit
+
 
 #### Install via pip
 
-```bash
+
 pip install -r requirements.txt
-📂 Dataset
+- Dataset
 updated_core_rooms.csv → loaded into df_rooms (supplier listings)
 
 reference_rooms-1737378184366.csv → loaded into df_ref (reference data)
@@ -50,9 +48,9 @@ Using multilingual support:
 
 ### Language Detection: fastText lid.176.bin
 
-### Fuzzy Token Matching: rapidfuzz.partial_ratio (normalized, punctuation-free comparison)
+  - Fuzzy Token Matching: rapidfuzz.partial_ratio (normalized, punctuation-free comparison)
 
-### Handles mixed-language names like "Deluxe Room (디럭스 패밀리 트윈)"
+  - Handles mixed-language names like "Deluxe Room (디럭스 패밀리 트윈)"
 
 ### Matching Logic
 Each candidate pair is labeled:
@@ -123,13 +121,13 @@ Probabilistic predictions allow for ranked match scoring
 
 Human-friendly sample evaluation included:
 
-### High-confidence matches
+  - High-confidence matches
 
-### Rejected mismatches
+  - Rejected mismatches
 
-### Sample Predictions
+  - Sample Predictions
 
-Supplier Name	Ref Name	Fuzzy	Prediction
-Deluxe Room, 2 Beds	Deluxe Room (디럭스)	0.92	: Match
-Economy Bunk	Family Suite	0.41	: No Match
+Supplier Name	Ref Name	Fuzzy	Prediction <br>
+Deluxe Room, 2 Beds	Deluxe Room (디럭스)	0.92	: Match  <br>
+Economy Bunk	Family Suite	0.41	: No Match  <br>
 
