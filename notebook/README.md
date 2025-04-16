@@ -64,7 +64,7 @@ fuzzy_score >= 0.85	Considered a match
 Label = 1 if any strong match is present	Binary label
 
 ```python
-label = int(fuzzy_score >= 0.85 or id_match)
+label = int(id_match and fuzzy_score >= 0.85)
 ```
 
 ### Optional: Deep Sentence Embedding for Multilingual Matching
