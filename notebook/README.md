@@ -1,10 +1,10 @@
-# Multilingual Room Matching with Fuzzy Logic and XGBoost
+## Multilingual Room Matching with Fuzzy Logic and XGBoost
 
 This project builds a multilingual, fuzzy logic–based machine learning pipeline for **matching hotel room listings** between suppliers and a reference dataset. It supports **multiple and mixed languages** (e.g., English, Korean, Arabic) using `fastText` and `rapidfuzz`, followed by a binary classification model using **XGBoost**.
 
 ---
 
-## Requirements
+### Requirements
 
 Create a `requirements.txt` file with:
 
@@ -14,7 +14,7 @@ perl
 Copy
 Edit
 
-### Install via pip
+#### Install via pip
 
 ```bash
 pip install -r requirements.txt
