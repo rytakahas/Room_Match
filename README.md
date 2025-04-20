@@ -19,8 +19,8 @@ Room_Match/
 ├── app.py                     # Flask API server
 ├── matcher.py                 # Core logic for matching
 ├── models/                    # Trained XGBoost model + fastText model
-│   ├── model.pkl
-│   └── lid.176.bin
+│   ├── model.pkl              # - Generate in the notebook: room_match_dev.ipynb
+│   └── lid.176.bin            # - Download the model from https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin
 ├── sample_request.json        # Example POST request payload
 ├── test_post.py               # Simple script to send test POST request
 ├── notebooks/
