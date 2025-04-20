@@ -143,5 +143,5 @@ This improves multilingual and mixed-language understanding.
 
 ---
 
-## 📬 Contact
-For questions, ideas, or improvements, feel free to open an issue or pull request. ✨
+## Contact
+For questions, ideas, or improvements, feel free to open an issue or pull request.
