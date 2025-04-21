@@ -78,7 +78,7 @@ Label = 1 if any strong match is present	Binary label
 label = int(id_match (hotel_id & room_id) and fuzzy_score >= 0.85)
 ```
 
-### Optional: Deep Sentence Embedding for Multilingual Matching
+#### Multilingual matching: Deep Sentence Embedding for Multilingual Matching
 If GPU (e.g., Colab T4 or local CUDA) is available, you can boost multilingual matching 
 accuracy using SentenceTransformer for semantic similarity:
 
