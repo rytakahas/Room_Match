@@ -115,7 +115,7 @@ This improves multilingual and mixed-language understanding.
    - Filter candidate pairs by ID
 
 2. **Label Generation**
-   - `label = 1` if strong ID match and fuzzy_score >= 0.85 
+   - `label = 1` if strong IDs (hotel_id & room_id) match and fuzzy_score >= 0.85 
 
 3. **Model**
    - XGBoost classifier with Optuna
