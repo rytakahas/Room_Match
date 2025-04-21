@@ -27,6 +27,7 @@ df_rooms = pd.read_csv("updated_core_rooms.csv")
 df_ref = pd.read_csv("reference_rooms-1737378184366.csv")
 ```
 ### Exploratory Data Analysis (EDA)
+
 Dropped rows with missing supplier_room_name or room_name
 
 Verified data types: room_id, core_room_id, hotel_id, etc.
@@ -34,16 +35,24 @@ Verified data types: room_id, core_room_id, hotel_id, etc.
 Removed rows with NaN, empty strings, or duplicate entries
 
 ### Data Preparation Strategy
-1. Candidate Filtering by ID
-We first narrow down potential matches using:
+#### Matching Logic
+- **`lp_id` (Listing Platform ID)** identifies the supplier (e.g., Booking.com, Agoda),  
+  but **does not uniquely define a hotel or room**.
 
-lp_id (strong signal)
+- The **most reliable match** occurs when both `hotel_id` and `room_id` match —  
+  this strongly indicates the same room, regardless of `lp_id`.
 
-core_hotel_id and hotel_id
+- Matching only on `lp_id` is **weak**, since the same supplier can list multiple rooms/hotels.
 
-core_room_id, supplier_room_id, and room_id
+- **Safe Rule**: If `hotel_id` and `room_id` match → consider it the **same room**.  
+  Use `lp_id` only as a **secondary signal**, not for strict filtering.
+#### Matching Logic Summary
 
-This gives a small candidate set for each supplier room.
+| hotel_id Match | room_id Match | lp_id Match | Is It the Same Room? | Explanation                         |
+|----------------|----------------|-------------|-----------------------|-------------------------------------|
+| Yes          | Yes          |(Yes / No) Either | Yes                | Strong match – same room in same hotel |
+| Yes          | No           | (Yes / No)Either | No                 | Same hotel, different rooms         |
+| No           | (Yes / No) Any      | Yes         | No                 | Different hotels → no match         |
 
 2. Room Name Matching
 Using multilingual support:
@@ -53,22 +62,25 @@ Using multilingual support:
   - Fuzzy Token Matching: rapidfuzz.partial_ratio (normalized, punctuation-free comparison)
 
   - Handles mixed-language names like "Deluxe Room (디럭스 패밀리 트윈)"
+  - **Limitation**: `rapidfuzz.partial_ratio` is effective for within-language string comparisons but may return unreliable similarity scores for cross-language tokens (e.g., English vs. Korean). This is due to its reliance on character-level matching rather than semantic understanding.  
+  → For improved multilingual matching, consider using embedding-based approaches (e.g., fastText vectors or multilingual transformers).
 
 ### Matching Logic
 Each candidate pair is labeled:
 
 
 Condition	Feature
-lp_id, hotel_id, room_id match	Feature flags
+hotel_id, room_id match	Feature flags
 fuzzy_score >= 0.85	Considered a match
 Label = 1 if any strong match is present	Binary label
 
 ```python
-label = int(id_match and fuzzy_score >= 0.85)
+label = int(id_match (hotel_id & room_id) and fuzzy_score >= 0.85)
 ```
 
 ### Optional: Deep Sentence Embedding for Multilingual Matching
-If GPU (e.g., Colab T4 or local CUDA) is available, you can boost multilingual matching accuracy using SentenceTransformer for semantic similarity:
+If GPU (e.g., Colab T4 or local CUDA) is available, you can boost multilingual matching 
+accuracy using SentenceTransformer for semantic similarity:
 
 ```python
 from sentence_transformers import SentenceTransformer, util
@@ -123,7 +135,7 @@ model.fit(X_train, y_train)
 ```
 
 ### Results
-~99.6% F1-score on test set
+~ 100% F1-score on test set
 
 Probabilistic predictions allow for ranked match scoring
 
