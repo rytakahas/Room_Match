@@ -27,7 +27,7 @@ FLASK_APP=app.py flask run --host=0.0.0.0 --port=5050
 
 ```bash
 curl -X POST http://127.0.0.1:5050/room_match \
-  -H 'Content-Type: application/json' \
+  -H "Content-Type: application/json" \
   -d @sample_request.json
 ```
 
