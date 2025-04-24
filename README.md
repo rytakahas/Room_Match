@@ -21,14 +21,6 @@ pip install -r requirements.txt
 FLASK_APP=app.py flask run --host=0.0.0.0 --port=5050
 ```
 
-Or, run the helper script which starts the API and runs tests:
-
-```bash
-./run_server_and_test.sh
-```
-
-> This script installs dependencies, starts the server, and sends a test POST request using `sample_request.json`
-
 ---
 
 ### Step 3: Send a test request manually (if not using the script)
@@ -44,6 +36,15 @@ Or use Python:
 ```bash
 python test_post.py
 ```
+
+
+Or just run the helper script which starts the API and runs tests:
+
+```bash
+./run_server_and_test.sh sample_request.json
+```
+
+> This script installs dependencies, starts the server, and sends a test POST request using `sample_request.json`
 
 ---
 
