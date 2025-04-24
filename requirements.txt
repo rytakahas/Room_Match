@@ -1,6 +1,7 @@
 pandas==2.2.2
 numpy==1.26.4
 sentence_transformers==3.3.1
+fasttext==0.9.3
 tqdm==4.67.1
 rapidfuzz==3.13.0
 seaborn==0.13.2
