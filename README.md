@@ -1,18 +1,55 @@
-# Room_Match
+# Room Match API
 
-Cupid API’s Room Match
-
-##  Objective: Multilingual Room Matching with Fuzzy Logic and XGBoost
-
-Build a machine learning API similar to Cupid's Room Match API.
-This API handles POST requests and returns room match predictions between suppliers and reference rooms.
-Supports mixed-language input (e.g., English + Arabic + Korean).
+A Flask API for matching multilingual hotel room names using fuzzy matching and language detection.
 
 ---
 
-###  Project Structure
+## Setup
+
+### Step 1: Install dependencies
+Make sure you have Python 3.10+ installed, then run:
 
 ```bash
+pip install -r requirements.txt
+```
+
+---
+
+### Step 2: Start the Flask API (manual)
+
+```bash
+FLASK_APP=app.py flask run --host=0.0.0.0 --port=5050
+```
+
+Or, run the helper script which starts the API and runs tests:
+
+```bash
+./run_server_and_test.sh
+```
+
+> This script installs dependencies, starts the server, and sends a test POST request using `sample_request.json`
+
+---
+
+### Step 3: Send a test request manually (if not using the script)
+
+```bash
+curl -X POST http://127.0.0.1:5050/room_match \
+  -H 'Content-Type: application/json' \
+  -d @sample_request.json
+```
+
+Or use Python:
+
+```bash
+python test_post.py
+```
+
+---
+
+## Project Structure
+
+```
 Room_Match/
 ├── README.md                  # This file
 ├── requirements.txt           # All dependencies
@@ -20,9 +57,18 @@ Room_Match/
 ├── matcher.py                 # Core logic for matching
 ├── models/                    # Trained XGBoost model + fastText model
 │   ├── model.pkl              # - Generate in the notebook: room_match_dev.ipynb
-│   └── lid.176.bin            # - Download the model from https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin
+│   └── lid.176.bin            # - Download: https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin
 ├── sample_request.json        # Example POST request payload
 ├── test_post.py               # Simple script to send test POST request
+├── run_server_and_test.sh     # Script to run server and test it
+├── scripts/                   # Utility or dev scripts
+│   └── __init__.py            # Placeholder
+├── tests/                     # Unit tests for matcher and API
+│   ├── __init__.py
+│   ├── conftest.py
+│   ├── test_room_match.py
+│   ├── test_utils.py
+│   └── test_post.py
 ├── notebooks/
 │   └── room_match_dev.ipynb   # EDA, model training and evaluation
 └── __pycache__/
@@ -30,118 +76,7 @@ Room_Match/
 
 ---
 
-##  How to Run the API
+##License
+MIT
 
-###  Step 1: Install dependencies
-```bash
-pip install -r requirements.txt
-```
 
-###  Step 2: Start the Flask API
-```bash
-FLASK_APP=app.py flask run --host=0.0.0.0 --port=5050
-```
-
-###  Step 3: Send a test request
-```bash
-curl -X POST http://127.0.0.1:5050/room_match \
-  -H 'Content-Type: application/json' \
-  -d @sample_request.json
-```
-
-Or run:
-```bash
-python test_post.py
-```
-
----
-
-##  Input Format (sample_request.json)
-```json
-{
-  "inputCatalog": [
-    {
-      "supplierId": "nuitee",
-      "supplierRoomInfo": [
-        {"supplierRoomId": "2", "supplierRoomName": "Classic Room - Olympic Queen Bed - ROOM ONLY"}
-      ]
-    }
-  ],
-  "referenceCatalog": [
-    {
-      "propertyId": "5122906",
-      "propertyName": "Pestana Park Avenue",
-      "referenceRoomInfo": [
-        {"roomId": "512290602", "roomName": "Classic Room"},
-        {"roomId": "512290608", "roomName": "Classic Room - Disability Access"}
-      ]
-    }
-  ]
-}
-```
-
----
-
-##  Matching Logic
-
-- Language detection via fastText (`lid.176.bin`)
-- Text normalization (lowercase, strip accents, remove punctuation)
-- Fuzzy match using `rapidfuzz.partial_ratio`
-- Feature engineering:
-  - `room_id_match`
-  - `fuzzy_score`
-- Model: XGBoost classifier with Optuna tuning
-
-```python
-features = ["lp_id_match", "hotel_id_match", "room_id_match", "fuzzy_score"]
-label = int(fuzzy_score >= 0.85)
-```
-
-###  Optional Upgrade: SentenceTransformer
-If GPU (e.g., T4 in Colab) is available:
-```python
-from sentence_transformers import SentenceTransformer, util
-model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-```
-This improves multilingual and mixed-language understanding.
-
----
-
-##  Model Training Pipeline
-
-1. **Data Cleaning**
-   - Drop rows with missing names
-   - Normalize strings
-   - Filter candidate pairs by ID
-
-2. **Label Generation**
-   - `label = 1` if strong IDs (hotel_id & room_id) match and fuzzy_score >= 0.85 
-
-3. **Model**
-   - XGBoost classifier with Optuna
-   - Metrics: F1, ROC-AUC, Confusion matrix
-
-4. **Saved Output**
-   - `models/model.pkl`: trained classifier
-   - `models/lid.176.bin`: fastText language detection
-
----
-
-##  Example Output
-```json
-{
-  "supplierRoomId": "2",
-  "supplierRoomName": "Classic Room - Olympic Queen Bed - ROOM ONLY",
-  "refRoomId": "512290602",
-  "refRoomName": "Classic Room",
-  "fuzzy_score": 1.0,
-  "match_score": 0.9991,
-  "lang_supplier": "en",
-  "lang_ref": "en"
-}
-```
-
----
-
-## Contact
-For questions, ideas, or improvements, feel free to open an issue or pull request.
