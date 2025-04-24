@@ -1,4 +1,4 @@
-name: Run Pytest on Dev
+name: 🧪 Pytest on Dev
 
 on:
   push:
@@ -11,21 +11,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout repo
       uses: actions/checkout@v3
 
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.11'  # or your version
+        python-version: '3.12'
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest
 
-    - name: Run tests with pytest
+    - name: Run pytest
       run: |
-        pytest
+        pytest tests/
 
