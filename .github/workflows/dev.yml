@@ -26,6 +26,6 @@ jobs:
 
       - name: Run tests
         run: |
-          export PYTHONPATH=$PYTHONPATH:$(pwd)
-          pytest tests/
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/Room_Match
+          pytest Room_Match/tests/
 
