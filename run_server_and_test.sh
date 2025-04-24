@@ -2,25 +2,50 @@
 
 # Check if a JSON file was provided
 if [ -z "$1" ]; then
-  echo " Usage: ./run_server_and_test.sh path/to/sample_request.json"
+  echo "❗ Usage: ./run_server_and_test.sh path/to/sample_request.json"
   exit 1
 fi
 
 JSON_FILE=$1
+LOG_FILE=flask_server.log
 
-# Start the Flask server in the background
-FLASK_APP=app.py flask run --host=0.0.0.0 --port=5050 &
+echo "🚀 Starting Flask server using python app.py on port 5050..."
+python app.py > "$LOG_FILE" 2>&1 &
 FLASK_PID=$!
 
-# Wait a few seconds to let the server start
-sleep 3
+# Wait for the server to be ready (up to 15 seconds)
+echo "⏳ Waiting for Flask server to be ready..."
+for i in {1..15}; do
+  if nc -z 127.0.0.1 5050; then
+    echo "✅ Flask server is ready!"
+    break
+  fi
+  sleep 1
+done
 
-# Send the test request using curl and external JSON
-echo "Sending request using $JSON_FILE"
-curl -X POST http://127.0.0.1:5050/room_match \
-  -H 'Content-Type: application/json' \
-  -d @"$JSON_FILE"
+# If still not ready, print error and logs
+if ! ps -p $FLASK_PID > /dev/null; then
+  echo "❌ Flask server failed to start. Check the logs:"
+  cat "$LOG_FILE"
+  exit 1
+fi
 
-# Kill the server process
-kill $FLASK_PID
+# Send the request using curl
+echo "📤 Sending request using $JSON_FILE..."
+if command -v jq > /dev/null; then
+  curl -s -X POST http://127.0.0.1:5050/room_match \
+    -H "Content-Type: application/json" \
+    -d @"$JSON_FILE" | jq '.'
+else
+  curl -s -X POST http://127.0.0.1:5050/room_match \
+    -H "Content-Type: application/json" \
+    -d @"$JSON_FILE"
+fi
+
+# Stop the Flask server
+echo "🛑 Stopping Flask server (PID: $FLASK_PID)..."
+kill $FLASK_PID 2>/dev/null
+
+# Clean up
+rm -f "$LOG_FILE"
 
