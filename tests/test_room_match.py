@@ -1,31 +1,36 @@
-import pandas as pd
-from room_match.utils import normalize, fast_match, generate_matches
+# tests/test_room_match.py
+
+from matcher import normalize, embed_text, match_supplier_to_reference
+import torch
 
 def test_normalize():
     assert normalize("Hôtel Supérieur") == "hotel superieur"
     assert normalize("Deluxe Room!!") == "deluxe room"
     assert normalize(None) == ""
 
-def test_fast_match_score():
-    assert fast_match("Deluxe King", "Deluxe King Room") > 0.8
-    assert fast_match("Deluxe", "Standard") < 0.5
+def test_embed_text_returns_tensor():
+    emb = embed_text("Deluxe King Room")
+    assert isinstance(emb, torch.Tensor)
+    assert emb.ndim == 1  # Should be a 1D vector
 
-def test_generate_matches_hotel_id_check():
-    df_rooms = pd.DataFrame([{
-        "supplier_room_id": 1,
-        "core_room_id": 10,
-        "core_hotel_id": 100,
-        "lp_id": 5,
-        "supplier_room_name": "Deluxe King"
-    }])
+def test_match_supplier_to_reference_basic():
+    supplier_rooms = [
+        {"supplierRoomId": "S1", "supplierRoomName": "Deluxe King Bed"}
+    ]
+    reference_rooms = [
+        {"roomId": "R1", "roomName": "Deluxe King"},
+        {"roomId": "R2", "roomName": "Budget Twin Room"}
+    ]
 
-    df_ref = pd.DataFrame([{
-        "room_id": 10,
-        "hotel_id": 999,  # Wrong hotel, should be skipped
-        "lp_id": 5,
-        "room_name": "Deluxe King Room"
-    }])
+    results = match_supplier_to_reference(supplier_rooms, reference_rooms)
+    assert isinstance(results, list)
+    assert len(results) == 2
 
-    matches = generate_matches(df_rooms, df_ref)
-    assert len(matches) == 0
+    for result in results:
+        assert "match_score" in result
+        assert "cosine_sim" in result
+        assert isinstance(result["match_score"], float)
+        assert isinstance(result["cosine_sim"], float)
+        assert result["supplierRoomId"] == "S1"
+        assert result["refRoomId"] in ["R1", "R2"]
 
