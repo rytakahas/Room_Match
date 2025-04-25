@@ -1,6 +1,6 @@
 # Room Match API
 
-A Flask API for matching multilingual hotel room names using fuzzy matching and language detection.
+A Flask API for matching multilingual hotel room names using SentenceTransformer matching and language detection.
 
 ---
 
