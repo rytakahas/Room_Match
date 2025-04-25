@@ -1,6 +1,6 @@
-## Multilingual Room Matching with Fuzzy Logic and XGBoost
+## Multilingual Room Matching with SentenceTransformer (multilingual-e5-base) and XGBoost
 
-This project builds a multilingual, fuzzy logic–based machine learning pipeline for **matching hotel room listings** between suppliers and a reference dataset. It supports **multiple and mixed languages** (e.g., English, Korean, Arabic) using `fastText` and `rapidfuzz`, followed by a binary classification model using **XGBoost**.
+This project builds a multilingual, fuzzy logic–based , and SentenceTransformer machine learning pipelines for **matching hotel room listings** between suppliers and a reference dataset. It supports **multiple and mixed languages** (e.g., English, Korean, Arabic) using `fastText` and `rapidfuzz`, followed by a binary classification model using **XGBoost**.
 
 ---
 
@@ -65,6 +65,9 @@ Using multilingual support:
   - **Limitation**: `rapidfuzz.partial_ratio` is effective for within-language string comparisons but may return unreliable similarity scores for cross-language tokens (e.g., English vs. Korean). This is due to its reliance on character-level matching rather than semantic understanding.  
   → For improved multilingual matching, consider using embedding-based approaches (e.g., fastText vectors or multilingual transformers).
 
+### Recommended for improved multilingual matching:
+  - Use embedding-based similarity with SentenceTransformer and the model intfloat/multilingual-e5-base, which captures cross-lingual semantic relationships more effectively than token-based methods like rapidfuzz.
+
 ### Matching Logic
 Each candidate pair is labeled:
 
@@ -72,6 +75,7 @@ Each candidate pair is labeled:
 Condition	Feature
 hotel_id, room_id match	Feature flags
 fuzzy_score >= 0.85	Considered a match
+cosine_sim >= 0.85 Considered a match
 Label = 1 if any strong match is present	Binary label
 
 ```python
@@ -87,7 +91,7 @@ from sentence_transformers import SentenceTransformer, util
 import torch
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2", device=device)
+model = SentenceTransformer(""intfloat/multilingual-e5-base"", device=device)
 
 # Compare room names:
 sim = util.cos_sim(model.encode(name1, convert_to_tensor=True), 
@@ -100,6 +104,8 @@ This model supports 100+ languages and works great on mixed-language room names 
 
 "Deluxe Twin Room with two double beds"
 
+This embedding-based approach is ideal for cross-lingual matching scenarios where traditional token-based methods (e.g., fuzzy matching) may fail to capture semantic similarity.
+
 ### Model: XGBoost Classification
 We use XGBoost to learn from:
 
@@ -109,7 +115,7 @@ hotel_id_match
 
 room_id_match
 
-fuzzy_score
+cosine_sim
 
 ### Training Strategy
 80/20 train-test split
@@ -127,7 +133,7 @@ Metrics:
 - Probability-based ranking
 
 ```python
-X = match_df[['lp_id_match', 'hotel_id_match', 'room_id_match', 'fuzzy_score']]
+X = match_df[['lp_id_match', 'hotel_id_match', 'room_id_match', 'cosine_sim']]
 y = match_df['label']
 
 model = xgboost.XGBClassifier(...)
@@ -149,8 +155,7 @@ Human-friendly sample evaluation included:
 
 ### Sample Predictions
 
-| Supplier Name             | Ref Name                    | Fuzzy Score | Prediction   |
-|--------------------------|-----------------------------|-------------|--------------|
-| Deluxe Room, 2 Beds      | Deluxe Room (디럭스)         | 0.92        |  Match      |
-| Economy Bunk             | Family Suite                | 0.41        |  No Match   |
+| Supplier Name             | Ref Name                              | Fuzzy Score | Prediction   |
+|--------------------------|----------------------------------------|-------------|--------------|
+| غرفة ديلوكس              | Deluxe Room (ディラックス ルーム)       | 0.9050      |  Match       |
 
