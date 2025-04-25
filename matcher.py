@@ -1,33 +1,23 @@
 # matcher.py
 import re
 import unicodedata
-import fasttext
-import xgboost
+import torch
 import joblib
+import pandas as pd
 from tqdm import tqdm
 from collections import defaultdict
-from rapidfuzz.fuzz import partial_ratio
-import os
-from urllib.request import urlretrieve
+from sentence_transformers import SentenceTransformer, util
 
-MODEL_PATH = 'models/lid.176.bin'
-
-if not os.path.exists(MODEL_PATH):
-    os.makedirs('models', exist_ok=True)
-    urlretrieve(
-        'https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin',
-        MODEL_PATH
-    )
-
-lang_model = fasttext.load_model(MODEL_PATH)
-
-# Load fastText language detection model
-lang_model = fasttext.load_model('models/lid.176.bin')
+# Load SentenceTransformer model (E5 multilingual)
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+model = SentenceTransformer("intfloat/multilingual-e5-base", device=device)
 
 # Load trained XGBoost model
 xgb_model = joblib.load("models/model.pkl")
 
-# Normalize text: lower, strip accents/punctuation
+# =========================
+# Text Normalization
+# =========================
 def normalize(text):
     if not isinstance(text, str):
         return ''
@@ -35,35 +25,42 @@ def normalize(text):
     text = unicodedata.normalize('NFD', text)
     text = ''.join(c for c in text if unicodedata.category(c) != 'Mn')
     text = re.sub(r'[^\w\s]', '', text)
+    text = re.sub(r'\s+', ' ', text)
     return text.strip()
 
-# Fuzzy match using normalized text
-def fast_match(name1, name2):
-    return partial_ratio(normalize(name1), normalize(name2)) / 100.0
+# =========================
+# Embedding Generator
+# =========================
+def embed_text(text):
+    norm_text = normalize(text)
+    embedding = model.encode(norm_text, convert_to_tensor=True, normalize_embeddings=True, device=device)
+    return embedding
 
-# Language detection using fastText
-def detect_lang(text):
-    try:
-        label, confidence = lang_model.predict(text.strip().replace('\n', ''))
-        return label[0].replace('__label__', ''), float(confidence[0])
-    except:
-        return 'unknown', 0.0
-
-# Main matcher function for API
+# =========================
+# Main Matcher Function
+# =========================
 def match_supplier_to_reference(supplier_rooms, reference_rooms):
     results = []
-    for sup in supplier_rooms:
-        lang_sup, conf_sup = detect_lang(sup['supplierRoomName'])
+    
+    print("Generating embeddings for reference rooms...")
+    ref_embeddings = {}
+    for ref in reference_rooms:
+        ref['normalized'] = normalize(ref['roomName'])
+        ref['embedding'] = embed_text(ref['roomName'])
+        ref_embeddings[ref['roomId']] = ref['embedding']
+    
+    print("Matching supplier rooms...")
+    for sup in tqdm(supplier_rooms):
+        sup_embedding = embed_text(sup['supplierRoomName'])
 
         for ref in reference_rooms:
-            lang_ref, conf_ref = detect_lang(ref['roomName'])
-            fuzzy_score = fast_match(sup['supplierRoomName'], ref['roomName'])
+            cosine_sim = float(util.cos_sim(sup_embedding, ref['embedding'])[0][0])
 
             features = {
-                "lp_id_match": 0,  # can be extended
-                "hotel_id_match": 0,  # can be extended
+                "lp_id_match": 0,  # Extend if available
+                "hotel_id_match": 0,  # Extend if available
                 "room_id_match": int(sup['supplierRoomId'] == ref['roomId']),
-                "fuzzy_score": fuzzy_score,
+                "cosine_sim": cosine_sim,
             }
 
             proba = xgb_model.predict_proba([[features[k] for k in features]])[0][1]
@@ -74,11 +71,8 @@ def match_supplier_to_reference(supplier_rooms, reference_rooms):
                 "refRoomId": ref['roomId'],
                 "refRoomName": ref['roomName'],
                 "match_score": float(round(proba, 4)),
-                "fuzzy_score": float(round(fuzzy_score, 4)),
-                "lang_supplier": lang_sup,
-                "lang_ref": lang_ref,
-                "lang_conf_supplier": float(round(conf_sup, 4)),
-                "lang_conf_ref": float(round(conf_ref, 4))
+                "cosine_sim": float(round(cosine_sim, 4))
             })
+
     return results
 
