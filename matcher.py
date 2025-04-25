@@ -2,10 +2,24 @@
 import re
 import unicodedata
 import fasttext
+import xgboost
 import joblib
 from tqdm import tqdm
 from collections import defaultdict
 from rapidfuzz.fuzz import partial_ratio
+import os
+from urllib.request import urlretrieve
+
+MODEL_PATH = 'models/lid.176.bin'
+
+if not os.path.exists(MODEL_PATH):
+    os.makedirs('models', exist_ok=True)
+    urlretrieve(
+        'https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin',
+        MODEL_PATH
+    )
+
+lang_model = fasttext.load_model(MODEL_PATH)
 
 # Load fastText language detection model
 lang_model = fasttext.load_model('models/lid.176.bin')

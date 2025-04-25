@@ -1,18 +1,13 @@
-name: Pytest for Room Match
+name: Python tests
 
-on:
-  push:
-    branches: [main, dev]
-  pull_request:
-    branches: [main, dev]
+on: [push, pull_request]
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -24,8 +19,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run tests
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=$PYTHONPATH:$(pwd)" >> $GITHUB_ENV
+
+      - name: Download FastText model
         run: |
-          export PYTHONPATH=$PYTHONPATH:$(pwd)
-          pytest tests/
+          mkdir -p models
+          curl -L -o models/lid.176.bin https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin
+
+      - name: Run tests
+        run: pytest
 
