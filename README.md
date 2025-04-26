@@ -68,7 +68,6 @@ Room_Match/
 │   ├── __init__.py
 │   ├── conftest.py
 │   ├── test_room_match.py
-│   ├── test_utils.py
 │   └── test_post.py
 ├── notebooks/
 │   └── room_match_dev.ipynb   # EDA, model training and evaluation
